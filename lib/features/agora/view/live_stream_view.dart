@@ -1,7 +1,12 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_reaction_button/flutter_reaction_button.dart';
+import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../constants/app_constants.dart';
+import '../../../utils/reaction_emoji.dart';
 
 class LiveStreamingPage extends StatefulWidget {
   final bool isHost;
@@ -18,6 +23,7 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
   bool _isInitialized = false;
   final Set<int> _users = {};
   int? _hostUid;
+  bool _isAnimationPlaying = false;
 
   Future<void> initAgora() async {
     // Only request permissions for host
@@ -51,8 +57,11 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
 
       if (widget.isHost) {
         await _engine.setVideoEncoderConfiguration(
-          const VideoEncoderConfiguration(
-            dimensions: VideoDimensions(width: 640, height: 360),
+          VideoEncoderConfiguration(
+            dimensions: VideoDimensions(
+              width: MediaQuery.of(context).size.height.toInt(),
+              height: MediaQuery.of(context).size.height.toInt(),
+            ),
             frameRate: 30,
             bitrate: 1500,
           ),
@@ -142,6 +151,15 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
     super.dispose();
   }
 
+  final defaultInitialReaction = const Reaction<String>(
+    value: null,
+    icon: Icon(
+      Icons.favorite_border,
+      color: Colors.black,
+      size: 30,
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -158,35 +176,6 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
                     children: [
                       Expanded(
                         child: _buildHostView(),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.favorite, color: Colors.red),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.emoji_emotions, color: Colors.yellow),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.emoji_emotions_outlined, color: Colors.blue),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.whatshot, color: Colors.orange),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.pages, color: Colors.green),
-                                onPressed: () {},
-                              ),
-                            ],
-                          ),
-                        ],
                       ),
                     ],
                   ),
@@ -255,7 +244,6 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
             ),
           ),
         ),
-        // Display viewer count
         Positioned(
           top: 16,
           right: 16,
@@ -284,6 +272,33 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
             ),
           ),
         ),
+        Positioned(
+          bottom: 10,
+          right: 20,
+          child: ReactionButton<String>(
+            itemSize: const Size.square(40),
+            onReactionChanged: (Reaction<String>? reaction) {
+              setState(() {
+                _isAnimationPlaying = true;
+              });
+              debugPrint('Selected value------------------: ${reaction?.value}');
+            },
+            reactions: reactions,
+            placeholder: defaultInitialReaction,
+            selectedReaction: reactions.first,
+          ),
+        ),
+        if (_isAnimationPlaying)
+          Lottie.asset(
+            'assets/animations/love_animation.json',
+            onLoaded: (composition) {
+              Future.delayed(const Duration(seconds: 2), () {
+                setState(() {
+                  _isAnimationPlaying = false;
+                });
+              });
+            },
+          ),
       ],
     );
   }
